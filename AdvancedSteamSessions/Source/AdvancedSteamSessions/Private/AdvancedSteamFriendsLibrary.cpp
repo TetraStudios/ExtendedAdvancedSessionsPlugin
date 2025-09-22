@@ -237,6 +237,28 @@ bool UAdvancedSteamFriendsLibrary::RequestSteamFriendInfo(const FBPUniqueNetId U
 	return false;
 }
 
+void UAdvancedSteamFriendsLibrary::OpenSteamURL(UObject* WorldContextObject, FString URL)
+{
+#if (PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX) && STEAM_SDK_INSTALLED
+	if (SteamAPI_Init())
+	{
+		FTCHARToUTF8 Conv(*URL);
+		const char* Ptr = Conv.Get();
+		SteamFriends()->ActivateGameOverlayToWebPage(Ptr, EActivateGameOverlayToWebPageMode::k_EActivateGameOverlayToWebPageMode_Default);
+	}
+#endif
+}
+
+void UAdvancedSteamFriendsLibrary::ForceSteamVerify(UObject* WorldContextObject, bool missingOnly = false)
+{
+#if (PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX) && STEAM_SDK_INSTALLED
+	if (SteamAPI_Init())
+	{
+		SteamApps()->MarkContentCorrupt(missingOnly);
+	}
+#endif
+}
+
 
 bool UAdvancedSteamFriendsLibrary::OpenSteamUserOverlay(UObject* WorldContextObject,const FBPUniqueNetId UniqueNetId, ESteamUserOverlayType DialogType)
 {
