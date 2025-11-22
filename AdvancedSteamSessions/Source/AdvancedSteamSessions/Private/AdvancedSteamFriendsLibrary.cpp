@@ -176,6 +176,55 @@ FString UAdvancedSteamFriendsLibrary::GetSteamPersonaName(const FBPUniqueNetId U
 	return FString(TEXT(""));
 }
 
+
+void UAdvancedSteamFriendsLibrary::ForceRestartThroughSteam(int32 SteamAppId)
+{
+
+#if (PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX) && STEAM_SDK_INSTALLED
+
+	// Sanity check
+	if (SteamAppId <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ForceRestartThroughSteam: Invalid Steam AppId (%d)."), SteamAppId);
+		return;
+	}
+
+
+
+	// Check if Steam environment variables are already present.
+	// If they are, we are probably already running under Steam.
+	const FString SteamAppIdEnv = FPlatformMisc::GetEnvironmentVariable(TEXT("SteamAppId"));
+	const FString SteamGameIdEnv = FPlatformMisc::GetEnvironmentVariable(TEXT("SteamGameId"));
+	const bool bLaunchedBySteam = !SteamAppIdEnv.IsEmpty() || !SteamGameIdEnv.IsEmpty();
+
+	UE_LOG(LogTemp, Log, TEXT("ForceRestartThroughSteam: LaunchedBySteam=%s (SteamAppIdEnv='%s', SteamGameIdEnv='%s')"),
+		bLaunchedBySteam ? TEXT("true") : TEXT("false"),
+		*SteamAppIdEnv,
+		*SteamGameIdEnv);
+
+	// Call Valve's recommended function. If it returns true, Steam will
+	// restart us and we MUST exit this process as soon as possible.
+	const bool bShouldRestart = SteamAPI_RestartAppIfNecessary((uint32)SteamAppId);
+
+	if (bShouldRestart)
+	{
+		UE_LOG(LogTemp, Log, TEXT("ForceRestartThroughSteam: Requesting restart via Steam (AppId=%d). Exiting now."), SteamAppId);
+
+		// This tells Unreal to shut down cleanly. Steam will spawn a new
+		// process under the correct context (steam://run/AppId).
+		FPlatformMisc::RequestExit(false);
+
+		// Do not do anything else after this point.
+		return;
+	}
+
+	// If we get here, either:
+	// - We were already launched via Steam, or
+	// - Steam couldn't/shouldn't restart the app (e.g. wrong AppId).
+	UE_LOG(LogTemp, Log, TEXT("ForceRestartThroughSteam: No restart needed (already under Steam or restart not required)."));
+#endif
+}
+
 FBPUniqueNetId UAdvancedSteamFriendsLibrary::CreateSteamIDFromString(const FString SteamID64)
 {
 	FBPUniqueNetId netId;

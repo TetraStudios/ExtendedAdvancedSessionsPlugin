@@ -358,6 +358,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Online|AdvancedFriends|SteamAPI")
 	static FString GetSteamPersonaName(const FBPUniqueNetId UniqueNetId);
 
+	//Forces the game to properly launch via Steam
+	UFUNCTION(BlueprintCallable, Category = "Online|AdvancedFriends|SteamAPI")
+	static void ForceRestartThroughSteam(int32 SteamAppId);
+
 	// Creates a unique steam id directly from a string holding a uint64 value, useful for testing
 	UFUNCTION(BlueprintPure, Category = "Online|AdvancedFriends|SteamAPI")
 	static FBPUniqueNetId CreateSteamIDFromString(const FString SteamID64);
