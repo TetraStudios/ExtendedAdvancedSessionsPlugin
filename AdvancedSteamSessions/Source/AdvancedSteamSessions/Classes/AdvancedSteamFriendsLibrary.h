@@ -396,4 +396,18 @@ public:
 	// Returns if steam is running in big picture mode
 	UFUNCTION(BlueprintPure, Category = "Online|SteamAPI")
 		static bool IsSteamInBigPictureMode();
-};	
+
+	// Returns if Steam is currently connected to the Steam network (i.e. not in offline mode).
+	// Returns false if the Steam SDK isn't initialized or the user is offline.
+	UFUNCTION(BlueprintPure, Category = "Online|SteamAPI")
+		static bool IsSteamOnline();
+
+	// If Steam is in offline mode, brings the Steam client window to the foreground via the
+	// steam://open/main URL handler so the user can manually click "Steam -> Go Online".
+	// Steamworks does NOT expose a programmatic way to force Steam online; this is the best we can do.
+	// bOutWasAlreadyOnline returns true if no action was needed (Steam was already online).
+	// Returns true if the request was issued or no action was needed; false if the SDK isn't available
+	// or launching the URL failed.
+	UFUNCTION(BlueprintCallable, Category = "Online|SteamAPI")
+		static bool RequestSteamGoOnline(bool& bOutWasAlreadyOnline);
+};

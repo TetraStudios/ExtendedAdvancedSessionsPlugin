@@ -523,3 +523,86 @@ bool UAdvancedSteamFriendsLibrary::IsSteamInBigPictureMode()
 
 	return false;
 }
+
+bool UAdvancedSteamFriendsLibrary::IsSteamOnline()
+{
+#if (PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX) && STEAM_SDK_INSTALLED
+
+	if (!SteamAPI_Init())
+	{
+		return false;
+	}
+
+	ISteamUser* User = SteamUser();
+	if (!User)
+	{
+		return false;
+	}
+
+	// Per Steamworks SDK: BLoggedOn() returns false if Steam is in offline mode, has no
+	// network connection on the local machine, or the Steam servers are down/busy.
+	if (!User->BLoggedOn())
+	{
+		return false;
+	}
+
+	// Defensive: a valid SteamID should always be present for a logged-on user. If it isn't,
+	// Steam is in some transitional / not-fully-online state.
+	if (!User->GetSteamID().IsValid())
+	{
+		return false;
+	}
+
+	// Defensive: GetConnectedUniverse() returns k_EUniverseInvalid when the Steam client
+	// is not connected to any Steam universe (e.g. offline mode, no network).
+	if (ISteamUtils* Utils = SteamUtils())
+	{
+		if (Utils->GetConnectedUniverse() == k_EUniverseInvalid)
+		{
+			return false;
+		}
+	}
+
+	return true;
+
+#else
+	return false;
+#endif
+}
+
+bool UAdvancedSteamFriendsLibrary::RequestSteamGoOnline(bool& bOutWasAlreadyOnline)
+{
+	bOutWasAlreadyOnline = false;
+
+#if (PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX) && STEAM_SDK_INSTALLED
+
+	if (!SteamAPI_Init())
+	{
+		UE_LOG(AdvancedSteamFriendsLog, Warning, TEXT("RequestSteamGoOnline: Steam SDK not initialized."));
+		return false;
+	}
+
+	ISteamUser* User = SteamUser();
+	if (User && User->BLoggedOn())
+	{
+		bOutWasAlreadyOnline = true;
+		return true;
+	}
+
+	// Steamworks has no API to programmatically switch from Offline to Online. The closest we can do
+	// is bring the Steam client window to the foreground so the user can click Steam -> Go Online.
+	FString LaunchError;
+	FPlatformProcess::LaunchURL(TEXT("steam://open/main"), nullptr, &LaunchError);
+	if (!LaunchError.IsEmpty())
+	{
+		UE_LOG(AdvancedSteamFriendsLog, Warning, TEXT("RequestSteamGoOnline: Failed to open Steam client: %s"), *LaunchError);
+		return false;
+	}
+
+	UE_LOG(AdvancedSteamFriendsLog, Log, TEXT("RequestSteamGoOnline: Steam is offline. Opened Steam client so user can go online manually."));
+	return true;
+
+#endif
+
+	return false;
+}
